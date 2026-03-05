@@ -2,6 +2,9 @@ package ru.otus.spring.service;
 
 import lombok.RequiredArgsConstructor;
 import ru.otus.spring.dao.QuestionDao;
+import ru.otus.spring.domain.Answer;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public class TestServiceImpl implements TestService {
@@ -15,6 +18,17 @@ public class TestServiceImpl implements TestService {
         ioService.printLine("");
         ioService.printFormattedLine("Please answer the questions below%n");
         var questions = questionDao.findAll();
-        questions.forEach(it -> ioService.printLine(it.toString()));
+        questions.forEach(it -> {
+                    ioService.printFormattedLine(it.text());
+                    ioService.printFormattedLine(printAnswers(it.answers()));
+                }
+        );
+    }
+
+    String printAnswers(Collection<Answer> answers) {
+        return answers
+                .stream()
+                .map(answer -> answer.text() + " (" + answer.isCorrect() + ")")
+                .collect(Collectors.joining("\n"));
     }
 }
