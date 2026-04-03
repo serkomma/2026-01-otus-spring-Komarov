@@ -4,14 +4,29 @@ import org.junit.jupiter.api.Test;
 import ru.otus.hw.config.AppProperties;
 import ru.otus.hw.dao.CsvQuestionDao;
 import ru.otus.hw.dao.QuestionDao;
+import ru.otus.hw.domain.Answer;
+import ru.otus.hw.domain.Question;
 import ru.otus.hw.domain.Student;
+import ru.otus.hw.domain.TestResult;
 import ru.otus.hw.exceptions.QuestionReadException;
-import ru.otus.hw.service.*;
+import ru.otus.hw.service.IOService;
+import ru.otus.hw.service.StudentService;
+import ru.otus.hw.service.TestRunnerService;
+import ru.otus.hw.service.TestService;
+import ru.otus.hw.service.ResultService;
+import ru.otus.hw.service.StreamsIOService;
+import ru.otus.hw.service.TestServiceImpl;
+import ru.otus.hw.service.ResultServiceImpl;
+import ru.otus.hw.service.StudentServiceImpl;
+import ru.otus.hw.service.TestRunnerServiceImpl;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.stream.IntStream;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -65,6 +80,48 @@ public class CsvPrinterTest {
         var student = studentService.determineCurrentStudent();
         assertEquals("Jerry", student.firstName());
         assertEquals("Smith", student.lastName());
+    }
+
+    @Test
+    public void testResultsShouldBeCountedCorrect() {
+        Student student = new Student("Jerry", "Smith");
+        TestResult testResult = new TestResult(student);
+        Question question = new Question("Question?",
+                List.of(new Answer("Right", true))
+        );
+        testResult.applyAnswer(
+                question,
+                true
+        );
+        assertEquals(1, testResult.getRightAnswersCount());
+        testResult.applyAnswer(
+                question,
+                false
+        );
+        assertEquals(1, testResult.getRightAnswersCount());
+        assertEquals(2, testResult.getAnsweredQuestions().size());
+    }
+
+    @Test
+    void answersShouldBePrintedWithNumbers(){
+        Question question = new Question("Question?",
+                List.of(
+                        new Answer("Right", true),
+                        new Answer("No", true),
+                        new Answer("Maybe", true)
+                )
+        );
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        PrintStream printStream = new PrintStream(outputStream);
+        IOService ioService = new StreamsIOService(printStream, System.in);
+        ioService.printNumberedList(question.answers().stream().map(Answer::text).toList());
+        var result = outputStream.toString(StandardCharsets.UTF_8).lines().toList();
+        IntStream.range(0, result.size()).forEach(i ->
+                {
+                    Integer firstSymbol = Integer.parseInt(result.get(i).substring(0, 1));
+                    assertEquals(i + 1, firstSymbol);
+                }
+        );
     }
 
     @Test
